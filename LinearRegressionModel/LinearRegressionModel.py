@@ -5,16 +5,29 @@ import matplotlib.pyplot
 
 class Matrix:
     def __init__(self):
+        """
+            矩阵初始化
+        """
         self.matrix = list()
         self.row_count = 0
         self.col_count = 0
 
     def initialize(self, array: list) -> None:
+        """
+            传入二维数组 对矩阵进行初始化
+        :param array:
+        :return:
+        """
         self.matrix = array
         self.row_count = array.__len__()
         self.col_count = array[0].__len__()
 
     def read_from_csv(self, filename: str = "test.csv"):
+        """
+            从csv文件中读取数据
+        :param filename:
+        :return:
+        """
         self.matrix = list()
         with open(filename, "r") as file:
             lines = file.readlines()
@@ -25,11 +38,20 @@ class Matrix:
         self.col_count = self.matrix[0].__len__()
 
     def add_ones_column(self):
+        """
+            加入 元素均为 1 的列
+        :return:
+        """
         self.col_count += 1
         for i in range(0, self.row_count):
             self.matrix[i].append(1)
 
     def __getitem__(self, item):
+        """
+            重载 [] 运算符
+        :param item:
+        :return:
+        """
         if type(item) == list:
             if item[0] == "back" and item[1] == "back":
                 return self.matrix[self.row_count - 1][self.col_count - 1]
@@ -50,14 +72,28 @@ class Matrix:
 
     @property
     def __len__(self) -> list:
+        """
+            返回矩阵的规模
+        :return:
+        """
         return [self.row_count, self.col_count]
 
     @property
     def doc(self) -> str:
+        """
+            返回类名
+        :return:
+        """
         return "Matrix"
 
 
 def sub_matrix(array: list, m, n) -> list:
+    """
+    :param array:
+    :param m:
+    :param n:
+    :return: 返回子矩阵
+    """
     order = array.__len__()
     res = list()
     for i in range(0, order):
@@ -71,6 +107,10 @@ def sub_matrix(array: list, m, n) -> list:
 
 
 def determinant(array: list) -> float:
+    """
+    :param array:
+    :return: 返回行列式值
+    """
     order = array.__len__()
     assert order == array[0].__len__()
     if order == 1:
@@ -86,6 +126,10 @@ def determinant(array: list) -> float:
 
 
 def transpose(array: list) -> Matrix:
+    """
+    :param array:
+    :return: 返回转置矩阵
+    """
     row_count, col_count = array[0].__len__(), array.__len__()
     res_array = [[0.0 for _ in range(0, col_count)] for _ in range(0, row_count)]
     for i in range(0, row_count):
@@ -97,9 +141,14 @@ def transpose(array: list) -> Matrix:
 
 
 def multiply(array1: list, array2: list) -> Matrix:
+    """
+    :param array1:
+    :param array2:
+    :return: 返回两个矩阵的成绩
+    """
     row_count, mid_count, col_count = array1.__len__(), array2.__len__(), array2[0].__len__()
     assert mid_count == array1[0].__len__()
-    res_array = [[0 for _ in range(0, col_count)] for _ in range(0, row_count)]
+    res_array = [[0.0 for _ in range(0, col_count)] for _ in range(0, row_count)]
     for i in range(0, row_count):
         for j in range(0, col_count):
             for k in range(0, mid_count):
@@ -110,12 +159,16 @@ def multiply(array1: list, array2: list) -> Matrix:
 
 
 def inverse_matrix(array: list) -> Matrix:
+    """
+    :param array:
+    :return: 求出逆矩阵
+    """
     order = array.__len__()
     res_array = [[0.0 for _ in range(0, order)] for _ in range(0, order)]
     det = determinant(array)
     for i in range(0, order):
         for j in range(0, order):
-            res_array[i][j] = (-1) ** (j % 2) * determinant(sub_matrix(array, i, j)) / det
+            res_array[i][j] = (-1) ** ((i + j) % 2) * determinant(sub_matrix(array, i, j)) / det
     res = Matrix()
     res.initialize(res_array)
     return res
@@ -123,24 +176,40 @@ def inverse_matrix(array: list) -> Matrix:
 
 class MultipleLinearRegression:
     def __init__(self, train_X: Matrix, train_y: Matrix):
+        """
+            初始化回归模型
+        :param train_X:
+        :param train_y:
+        """
         self.sample_X = train_X
         self.sample_y = train_y
         self.coefficient_matrix = Matrix()
         self.calc_coefficient()
 
     def calc_coefficient(self) -> None:
+        """
+        :return: 计算回归系数
+        """
         transpose_matrix = transpose(self.sample_X.matrix).matrix
-        tmp = inverse_matrix(multiply(transpose_matrix, self.sample_X.matrix).matrix).matrix
-        self.coefficient_matrix = multiply(multiply(tmp, transpose_matrix).matrix, self.sample_y.matrix)
+        tmp1 = multiply(transpose_matrix, self.sample_X.matrix).matrix
+        tmp2 = inverse_matrix(tmp1).matrix
+        self.coefficient_matrix = multiply(multiply(tmp2, transpose_matrix).matrix, self.sample_y.matrix)
 
     def predict(self, input_x: list) -> float:
+        """
+        :param input_x:
+        :return: 给出线性预测值
+        """
         input_x_m = Matrix()
         input_x_m.initialize([input_x])
         return multiply(input_x_m.matrix, self.coefficient_matrix.matrix)[0][0]
 
 
 class LinearRegressionModel:
-    def __init__(self, filename: str = "test.csv"):
+    def __init__(self, filename: str = "test.csv", training_cases_ratio: float = 0.8):
+        """
+        :param filename: 初始化模型 从文件中读取
+        """
         self.input_X = Matrix()
         self.input_y = Matrix()
         self.train_X = Matrix()
@@ -157,9 +226,13 @@ class LinearRegressionModel:
 
         self.read_from_csv(filename)
         self.regression_train = None
-        self.split_train_test(training_cases_ratio=0.8)
+        self.split_train_test(training_cases_ratio=training_cases_ratio)
 
     def read_from_csv(self, filename: str) -> bool:
+        """
+        :param filename:
+        :return: 从文件中读取样本数据
+        """
         self.input_X.matrix = list()
         self.input_y.matrix = list()
         try:
@@ -183,6 +256,10 @@ class LinearRegressionModel:
         return True
 
     def split_train_test(self, training_cases_ratio: float = 0.8):
+        """
+        :param training_cases_ratio:
+        :return: 划分测试集与训练集
+        """
         tmp = list(zip(self.input_X, self.input_y))
         self.case_count = tmp.__len__()
         random.shuffle(tmp)
@@ -199,6 +276,10 @@ class LinearRegressionModel:
         self.regression_train = MultipleLinearRegression(self.train_X, self.train_y)
 
     def test_case_predict(self):
+        """
+            用测试集进行预测
+        :return:
+        """
         for i in zip(self.test_X, self.test_y):
             self.report.append([i[1][0], self.regression_train.predict(i[0])])
         self.get_rmse()
@@ -206,6 +287,10 @@ class LinearRegressionModel:
         self.report_prediction()
 
     def get_rmse(self):
+        """
+            计算根方误差
+        :return:
+        """
         self.mse, self.rmse = 0.0, 0.0
         for i in range(0, self.case_count - self.training_case_count):
             self.mse += (self.report[i][1] - self.report[i][0]) ** 2
@@ -213,6 +298,10 @@ class LinearRegressionModel:
         self.rmse = math.sqrt(self.mse)
 
     def get_r_square(self):
+        """
+            计算 R^2
+        :return:
+        """
         test_y_avg, self.test_y_var, self.r_square = 0.0, 0.0, 0.0
         for i in range(0, self.case_count - self.training_case_count):
             test_y_avg += self.report[i][1]
@@ -223,8 +312,11 @@ class LinearRegressionModel:
         self.r_square = 1 - self.mse / self.test_y_var
 
     def report_prediction(self):
+        """
+            给出预测报告
+        :return:
+        """
         print("[Coefficients]", self.regression_train.coefficient_matrix.matrix)
-        print("[A sample (Real vs Predict)]", self.report[0])
         print("[MSE]", self.mse)
         print("[RMSE]", self.rmse)
         print("[R square]", self.r_square)
@@ -233,6 +325,10 @@ class LinearRegressionModel:
             self.plot_result()
 
     def plot_result(self):
+        """
+            对于一元线性回归作图
+        :return:
+        """
         x = [i for i in range(0, 80)]
         k = self.regression_train.coefficient_matrix[0][0]
         b = self.regression_train.coefficient_matrix[1][0]
@@ -244,5 +340,5 @@ class LinearRegressionModel:
 
 
 if __name__ == "__main__":
-    linear_regression_model = LinearRegressionModel("test2.csv")
+    linear_regression_model = LinearRegressionModel("test2.csv", training_cases_ratio=0.8)
     linear_regression_model.test_case_predict()
