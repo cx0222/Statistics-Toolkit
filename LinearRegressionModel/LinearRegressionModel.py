@@ -294,7 +294,7 @@ class LinearRegressionModel:
         self.mse, self.rmse = 0.0, 0.0
         for i in range(0, self.case_count - self.training_case_count):
             self.mse += (self.report[i][1] - self.report[i][0]) ** 2
-        self.mse /= self.training_case_count
+        self.mse /= (self.case_count - self.training_case_count)
         self.rmse = math.sqrt(self.mse)
 
     def get_r_square(self):
