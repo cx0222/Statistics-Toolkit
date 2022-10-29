@@ -1,15 +1,17 @@
-package com.nova.cx0222.homework;
+import com.formdev.flatlaf.FlatIntelliJLaf;
 
-// 陈  玄 2020311462
-
+import javax.swing.*;
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// 陈  玄 2020311462
 class InvalidInputException extends Exception {
     public InvalidInputException() {
         super();
@@ -42,7 +44,7 @@ class OutOfRangeException extends Exception {
     }
 }
 
-public class Main {
+class Core {
     private static final Character YUAN = '元';
     private static final Character WAN = '万';
     private static final Character YI = '亿';
@@ -71,7 +73,7 @@ public class Main {
         CHINESE_CHARS.put(103, "");
     }
 
-    public static String[] preProcess(String moneyString) throws InvalidInputException, OutOfRangeException {
+    private static String[] preProcess(String moneyString) throws InvalidInputException, OutOfRangeException {
         moneyString = moneyString.replace(" ", "").trim();
         moneyString = moneyString.replaceFirst("^0*", "");
         Pattern pattern = Pattern.compile("([0-9]+([.][0-9]*)?|[.][0-9]+)");
@@ -86,8 +88,7 @@ public class Main {
         return moneyStringParts;
     }
 
-    public static String parseDecimal(String decimalPart) {
-        System.out.println("小数部分：" + decimalPart);
+    private static String parseDecimal(String decimalPart) {
         char[] decimalPartCharArray = decimalPart.toCharArray();
         int decimalPartLength = decimalPartCharArray.length;
         StringBuilder decimalPartStringBuilder = new StringBuilder(1 << 3);
@@ -99,7 +100,7 @@ public class Main {
         return decimalPartStringBuilder.toString();
     }
 
-    public static String parseIntegerGroup(char[] subGroup) {
+    private static String parseIntegerGroup(char[] subGroup) {
         StringBuilder stringBuilder = new StringBuilder(1 << 3);
         int i = 0, j = 3;
         while (i < 4 && subGroup[i] == 48) {
@@ -118,8 +119,7 @@ public class Main {
         return stringBuilder.toString();
     }
 
-    public static String parseInteger(String integerPart) {
-        System.out.println("整数部分：" + integerPart);
+    private static String parseInteger(String integerPart) {
         char[][] integerParts = new char[3][4];
         int integerPartLength = integerPart.length();
         for (int i = 0; i < 12; ++i) {
@@ -172,7 +172,7 @@ public class Main {
         return integerPartStringBuilder.append(YUAN).toString();
     }
 
-    public static String readAloud(String moneyString) throws InvalidInputException, OutOfRangeException {
+    static String readAloud(String moneyString) throws InvalidInputException, OutOfRangeException {
         String[] moneyStrings = preProcess(moneyString);
         if (!Objects.equals(moneyStrings[0], "0") && !Objects.equals(moneyStrings[1], "000")) {
             return parseInteger(moneyStrings[0]) + parseDecimal(moneyStrings[1]);
@@ -184,16 +184,64 @@ public class Main {
             return "零元整";
         }
     }
+}
+
+public class Main extends JFrame {
+    private final JTextField input = new JTextField();
+    private final JButton show = new JButton("转换金额");
+    private final JButton copy = new JButton("复制结果");
+    private final JLabel hint = new JLabel("请输入要转换的金额，最大不超过一千亿元：");
+    private final JTextArea output = new JTextArea();
+    private final JTextArea about = new JTextArea();
+    private final Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+
+    Main() {
+        init();
+        this.setTitle("输出大写金额");
+        this.setSize(400, 300);
+        this.setResizable(false);
+        this.setVisible(true);
+        this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+    }
+
+    void init() {
+        this.setLayout(null);
+        this.add(input);
+        this.add(show);
+        this.add(copy);
+        this.add(hint);
+        this.add(output);
+        this.add(about);
+        hint.setBounds(55, 15, 290, 30);
+        input.setBounds(50, 55, 300, 30);
+        show.setBounds(80, 100, 100, 30);
+        copy.setBounds(220, 100, 100, 30);
+        output.setBounds(50, 145, 300, 45);
+        output.setEditable(false);
+        output.setLineWrap(true);
+        about.setBounds(50, 195, 300, 55);
+        about.setText("【说明】Java 第6章综合练习题\n【作者】陈   玄（中央财经大学）\n【版本】2.0 (35F66) + FlatLaf-2.6");
+        about.setEditable(false);
+        show.addActionListener(actionEvent -> {
+            try {
+                String result = Core.readAloud(input.getText());
+                JOptionPane.showMessageDialog(this, "转换成功", "提示", JOptionPane.INFORMATION_MESSAGE);
+                output.setText("【结果】人民币" + result);
+            } catch (Exception exception) {
+                String errorMessage = exception.getMessage();
+                output.setText("");
+                JOptionPane.showMessageDialog(this, errorMessage, "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        copy.addActionListener(actionEvent -> {
+            StringSelection stringSelection = new StringSelection(output.getText());
+            clipboard.setContents(stringSelection, null);
+            JOptionPane.showMessageDialog(this, "已复制！", "提示", JOptionPane.INFORMATION_MESSAGE);
+        });
+    }
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        String moneyString = scanner.next();
-        try {
-            String result = readAloud(moneyString);
-            System.out.println("人民币" + result);
-        } catch (Exception exception) {
-            System.err.println(exception.getMessage());
-            exception.getStackTrace();
-        }
+        FlatIntelliJLaf.setup();
+        new Main();
     }
 }
